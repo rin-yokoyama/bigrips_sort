@@ -16,6 +16,8 @@
 #include "TArtRecoRIPS.hh"
 #include "TArtRecoTOF.hh"
 #include "TArtRecoBeam.hh"
+#include "TArtBeam.hh"
+#include "TArtTOF.hh"
 
 #include "TSystem.h"
 #include "TTree.h"
