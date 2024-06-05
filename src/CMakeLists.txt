@@ -29,5 +29,5 @@ add_library(${lib_name} SHARED
 target_link_libraries(${lib_name} ${ROOT_LIBRARIES})
 
 install(TARGETS ${lib_name} DESTINATION lib)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/lib${lib_name}_rdict.pcm DESTINATION lib)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libTreeData_rdict.pcm DESTINATION lib)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../include/ DESTINATION include)
