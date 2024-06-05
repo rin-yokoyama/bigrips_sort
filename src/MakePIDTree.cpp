@@ -3,6 +3,7 @@
 #include "TArtStoreManager.hh"
 #include "TArtEventStore.hh"
 #include "TArtBigRIPSParameters.hh"
+#include "TArtFocalPlane.hh"
 #include "TArtDALIParameters.hh"
 #include "TArtCalibPID.hh"
 #include "TArtCalibDALI.hh"
@@ -26,12 +27,14 @@
 
 #include "signal.h"
 
+#include "BigRIPSTreeData.hpp"
+
 using namespace std;
 
 /** prints usage **/
 void usage(char *argv0)
 {
-    std::cout << "[MakeFullBigRIPSTree]: Usage: "
+    std::cout << "[MakePIDTree]: Usage: "
               << argv0 << "-i [input_file] -o [output_file]"
               << std::endl;
 }
@@ -66,6 +69,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
+    TreeData treeData;
     //  signal(SIGINT,stop_interrupt); // CTRL + C , interrupt
 
     // Create StoreManager both for calibration "TArtCalib..." and treatment "TArtReco..."
@@ -132,42 +136,23 @@ int main(int argc, char **argv)
     TTree *tree = new TTree("tree", "tree");
 
     // define data nodes which are supposed to be dumped to tree
+    tree->Branch("pid", "TreeData", &treeData);
+
     TClonesArray *info_array = (TClonesArray *)sman->FindDataContainer("EventInfo");
-    std::cout << info_array->GetName() << std::endl;
-    tree->Branch(info_array->GetName(), &info_array);
-
-    TClonesArray *ppac_array =
-        (TClonesArray *)sman->FindDataContainer("BigRIPSPPAC");
-    std::cout << ppac_array->GetName() << std::endl;
-    tree->Branch(ppac_array->GetName(), &ppac_array);
-
-    TClonesArray *pla_array =
-        (TClonesArray *)sman->FindDataContainer("BigRIPSPlastic");
-    tree->Branch(pla_array->GetName(), &pla_array);
-
-    TClonesArray *ic_array =
-        (TClonesArray *)sman->FindDataContainer("BigRIPSIC");
-    tree->Branch(ic_array->GetName(), &ic_array);
+    auto info = (TArtEventInfo *)info_array->At(0);
 
     TClonesArray *fpl_array =
         (TClonesArray *)sman->FindDataContainer("BigRIPSFocalPlane");
-    tree->Branch(fpl_array->GetName(), &fpl_array);
-
-    // PID reconstructed data:
-    TClonesArray *rips_array =
-        (TClonesArray *)sman->FindDataContainer("BigRIPSRIPS");
-    std::cout << rips_array->GetName() << std::endl;
-    tree->Branch(rips_array->GetName(), &rips_array);
+    auto f11 = (TArtFocalPlane *)fpl_array->FindObject("fpl11");
+    auto f5 = (TArtFocalPlane *)fpl_array->FindObject("fpl5");
 
     TClonesArray *tof_array =
         (TClonesArray *)sman->FindDataContainer("BigRIPSTOF");
-    std::cout << tof_array->GetName() << std::endl;
-    tree->Branch(tof_array->GetName(), &tof_array);
+    auto tof37 = (TArtTOF *)tof_array->At(0);
 
     TClonesArray *beam_array =
         (TClonesArray *)sman->FindDataContainer("BigRIPSBeam");
-    std::cout << beam_array->GetName() << std::endl;
-    tree->Branch(beam_array->GetName(), &beam_array);
+    auto beam37 = (TArtBeam *)beam_array->At(2);
 
     int neve = 0;
     //  while(estore->GetNextEvent()&& neve<1000){
@@ -183,6 +168,19 @@ int main(int argc, char **argv)
         // Reconstructiong the PID
         recopid->ClearData();
         recopid->ReconstructData();
+
+        treeData.tof = tof37->GetTOF();
+        treeData.zet = beam37->GetZet();
+        treeData.aoq = beam37->GetAoQ();
+        treeData.f5x = f5->GetX();
+        treeData.f11x = f11->GetX();
+        treeData.f11y = f11->GetY();
+        treeData.f11dt = 0;
+        treeData.beta = 0;
+        treeData.ts = info->GetTimeStamp();
+        treeData.sts = 0;
+        treeData.EventId = info->GetEventNumber();
+        treeData.RunId = info->GetRunNumber();
 
         tree->Fill();
         neve++;
